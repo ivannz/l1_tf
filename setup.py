@@ -18,7 +18,7 @@ setup(
     cmdclass={"build_ext": build_ext},
     packages=["l1tf",],
     author='Ivan Nazarov',
-    version='0.1.4',
+    version='0.1.5',
     description="""A python wrapper for L1 trend filtering via primal-dual algorithm """
                 """by Kwangmoo Koh, Seung-Jean Kim, and Stephen Boyd """
                 """(http://stanford.edu/~boyd/l1_tf/)""",

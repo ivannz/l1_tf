@@ -42,12 +42,13 @@ def l1tf(double[::1] X, double C, bool rel_c):
         If `ary` is a Pandas object then its names/columns and index are preserved.
     """
 
+    cdef int iter_status
     cdef double C_max
     cdef np.intp_t n_samples = X.shape[0]
     cdef np.double_t[::1] output_ = np.empty(n_samples, dtype=np.double)
 
-    if n_samples < 2:
-        raise RuntimeError("""`X` must have at least two samples.""")
+    if n_samples < 3:
+        raise RuntimeError("""`X` must have at least three samples.""")
 
     if rel_c:
         C_max = c_l1tf_Cmax(n_samples, &X[0], 0)
@@ -56,7 +57,10 @@ def l1tf(double[::1] X, double C, bool rel_c):
         C *= C_max
 
     with nogil:
-        c_l1tf(n_samples, &X[0], C, &output_[0], 0)
+        iter_status = c_l1tf(n_samples, &X[0], C, &output_[0], 0)
+
+    if iter_status < 0:
+        raise RuntimeError("""Could not solve the problem due to linear singularity.""")
 
     return output_
 
@@ -74,8 +78,8 @@ def l1tf_Cmax(double[::1] X):
     """
     cdef double C_max
     cdef np.intp_t n_samples = X.shape[0]
-    if n_samples < 2:
-        raise RuntimeError("""`X` must have at least two samples.""")
+    if n_samples < 3:
+        raise RuntimeError("""`X` must have at least three samples.""")
 
     C_max = c_l1tf_Cmax(n_samples, &X[0], 0)
     if C_max < 0:
