@@ -115,7 +115,7 @@ def l1_filter(ary, C=None, relative=False):
         raise ValueError("""`C` must be a nonegative scalar.""")
 
     # perform the API call
-    trend = c_l1tf(ary_, C=C, rel_c=relative)
+    trend = c_l1tf(ary_, C=C, rel_c=relative).base
 
     if isinstance(ary, pd.DataFrame):
         trend = type(ary)(trend, index=ary.index, columns=ary.columns)
