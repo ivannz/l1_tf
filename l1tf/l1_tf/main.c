@@ -85,7 +85,7 @@ void process_args(int argc, char *argv[], int *pn, double **py,
     }
     fclose(fp);
 
-    lambda_max = l1tf_lambdamax(n,buf_start);
+    lambda_max = l1tf_lambdamax(n,buf_start,1);
     if (rflag == 1)
         lambda = lambda*lambda_max;
 
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
     x = malloc(sizeof(double)*n);
 
     /* call main solver */
-    l1tf(n,y,lambda,x);
+    l1tf(n,y,lambda,x,1);
 
     /* print the result to stdout */
     print_dvec(n,x);

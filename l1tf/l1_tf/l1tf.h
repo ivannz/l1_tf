@@ -14,10 +14,12 @@ extern "C" {
 #endif
 
 /* main routine for l1 trend filtering */
-int l1tf(const int n, const double *y, const double lambda, double *x);
+int l1tf(const int n, const double *y, const double lambda, double *x,
+         const int verbose);
 
-/* utilit to compte the maximum value of lambda */
-double l1tf_lambdamax(const int n, double *y);
+/* utility to compute the maximum value of lambda */
+double l1tf_lambdamax(const int n, double *y,
+                      const int verbose);
 
 /* utility to print a vector */
 void print_dvec(int n, const double *x);
