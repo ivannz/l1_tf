@@ -47,8 +47,9 @@ def l1tf(double[::1] X, double C, bool rel_c):
     cdef np.intp_t n_samples = X.shape[0]
     cdef np.double_t[::1] output_ = np.empty(n_samples, dtype=np.double)
 
-    if n_samples < 3:
-        raise RuntimeError("""`X` must have at least three samples.""")
+    if n_samples < 4:
+        # with three samples the iterative algorithm is unstable.
+        raise RuntimeError("""`X` must have at least four samples.""")
 
     if rel_c:
         C_max = c_l1tf_Cmax(n_samples, &X[0], 0)
@@ -78,8 +79,8 @@ def l1tf_Cmax(double[::1] X):
     """
     cdef double C_max
     cdef np.intp_t n_samples = X.shape[0]
-    if n_samples < 3:
-        raise RuntimeError("""`X` must have at least three samples.""")
+    if n_samples < 4:
+        raise RuntimeError("""`X` must have at least four samples.""")
 
     C_max = c_l1tf_Cmax(n_samples, &X[0], 0)
     if C_max < 0:
