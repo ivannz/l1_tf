@@ -26,6 +26,11 @@
 #define  TRUE           (1)
 #define  FALSE          (0)
 
+/* status codes */
+#define  CONVERGED          (0)
+#define  MAXITER_EXCEEDED   (1)
+#define  LAPACK_ERROR       (-1)
+
 /* constant variables for fortran call */
 const double done       = 1.0;
 const double dtwo       = 2.0;
@@ -84,30 +89,12 @@ int l1tf(const int n, const double *y, const double lambda, double *x,
     double *dptr;
 
     int iters, lsiters;             /* IPM and linesearch iterations */
-    int i, info;
+    int i, info, iter_status;
     int *IPIV;
     int ddtf_chol;
 
-    /* memory allocation */
-    S       = malloc(sizeof(double)*m*3);
+    /* First memory allocation block */
     DDTF    = malloc(sizeof(double)*m*7);
-
-    DTz     = malloc(sizeof(double)*n);
-    Dy      = malloc(sizeof(double)*m);
-    DDTz    = malloc(sizeof(double)*m);
-
-    z       = malloc(sizeof(double)*m);
-    mu1     = malloc(sizeof(double)*m);
-    mu2     = malloc(sizeof(double)*m);
-    f1      = malloc(sizeof(double)*m);
-    f2      = malloc(sizeof(double)*m);
-    dz      = malloc(sizeof(double)*m);
-    dmu1    = malloc(sizeof(double)*m);
-    dmu2    = malloc(sizeof(double)*m);
-    w       = malloc(sizeof(double)*m);
-    rz      = malloc(sizeof(double)*m);
-    tmp_m1  = malloc(sizeof(double)*m);
-    tmp_m2  = malloc(sizeof(double)*m);
 
     IPIV    = malloc(sizeof(int)*m);
 
@@ -153,6 +140,34 @@ int l1tf(const int n, const double *y, const double lambda, double *x,
         F77_CALL(dgbtrf)(&m,&m,&itwo,&itwo,DDTF,&iseven,IPIV,&info);
     }
 
+    /* Abort if both the Cholesky and LU factorization fail */
+    if (info < 0) {
+        free(DDTF);
+        free(IPIV);
+        return (LAPACK_ERROR);
+    }
+
+    /* Second memory allocation block */
+    S       = malloc(sizeof(double)*m*3);
+
+    DTz     = malloc(sizeof(double)*n);
+
+    Dy      = malloc(sizeof(double)*m);
+    DDTz    = malloc(sizeof(double)*m);
+
+    z       = malloc(sizeof(double)*m);
+    mu1     = malloc(sizeof(double)*m);
+    mu2     = malloc(sizeof(double)*m);
+    f1      = malloc(sizeof(double)*m);
+    f2      = malloc(sizeof(double)*m);
+    dz      = malloc(sizeof(double)*m);
+    dmu1    = malloc(sizeof(double)*m);
+    dmu2    = malloc(sizeof(double)*m);
+    w       = malloc(sizeof(double)*m);
+    rz      = malloc(sizeof(double)*m);
+    tmp_m1  = malloc(sizeof(double)*m);
+    tmp_m2  = malloc(sizeof(double)*m);
+
     Dx(n,y,Dy);
 
     /* variable initialization */
@@ -177,6 +192,7 @@ int l1tf(const int n, const double *y, const double lambda, double *x,
     /*---------------------------------------------------------------------*
      *                          MAIN LOOP                                  *
      *---------------------------------------------------------------------*/
+    iter_status = MAXITER_EXCEEDED;
     for (iters = 0; iters <= MAXITER; iters++)
     {
         double zTDDTz;
@@ -215,14 +231,9 @@ int l1tf(const int n, const double *y, const double lambda, double *x,
 
         if (gap <= TOL)
         {
-            if(verbose > 0)
-            {
-                fprintf(stderr,"Solved\n");
-            }
-
-            F77_CALL(dcopy)(&n,y,&ione,x,&ione);
-            F77_CALL(daxpy)(&n,&dminusone,DTz,&ione,x,&ione);
-            return(0);
+            // Prematurely exit the loop
+            iter_status = CONVERGED;
+            break;
         }
 
         if (step >= 0.2)
@@ -325,12 +336,42 @@ int l1tf(const int n, const double *y, const double lambda, double *x,
 
     if(verbose > 0)
     {
-        fprintf(stderr,"Maxiter exceeded\n");
+        if(iter_status < 0)
+        {
+            fprintf(stderr,"Maxiter exceeded\n");
+        } else
+        {
+            fprintf(stderr,"Solved\n");
+        }
     }
 
+    // Finalize the solution
     F77_CALL(dcopy)(&n,y,&ione,x,&ione);
     F77_CALL(daxpy)(&n,&dminusone,DTz,&ione,x,&ione);
-    return(0);
+
+    // Free memory: block 2
+    free(S);
+    free(DTz);
+    free(Dy);
+    free(DDTz);
+    free(z);
+    free(mu1);
+    free(mu2);
+    free(f1);
+    free(f2);
+    free(dz);
+    free(dmu1);
+    free(dmu2);
+    free(w);
+    free(rz);
+    free(tmp_m1);
+    free(tmp_m2);
+
+    // Free memory: block 1
+    free(DDTF);
+    free(IPIV);
+
+    return(iter_status);
 }
 
 double l1tf_lambdamax(const int n, double *y, const int verbose)
@@ -341,6 +382,8 @@ double l1tf_lambdamax(const int n, double *y, const int verbose)
     int *piv;
 
     m = n-2;
+
+    // Allocate memory
     vec = malloc(sizeof(double)*m);
     mat = malloc(sizeof(double)*7*m);
     piv = malloc(sizeof(int)*m);
@@ -355,7 +398,7 @@ double l1tf_lambdamax(const int n, double *y, const int verbose)
     }
 
     F77_CALL(dpbsv)("L",&m,&itwo,&ione,mat,&ithree,vec,&m,&info);
-    if (info > 0) /* if Cholesky factorization fails, try LU factorization */
+    if (info != 0) /* if Cholesky factorization fails, try LU factorization */
     {
         if(verbose > 0)
         {
@@ -375,13 +418,22 @@ double l1tf_lambdamax(const int n, double *y, const int verbose)
         }
 
         F77_CALL(dgbsv)(&m,&itwo,&itwo,&ione,mat,&iseven,piv,vec,&m,&info);
-        if (info > 0) return -1.0;  /* if LU fails, return -1 */
     }
-    maxval = 0;
-    for (i = 0; i < m; i++)
+
+    /* if both Cholseky and LU fail, return -1 */
+    maxval = -1.0;
+    if (info == 0)
     {
-        if (fabs(vec[i]) > maxval) maxval = fabs(vec[i]);
+        for (i = 0; i < m; i++)
+        {
+            if (fabs(vec[i]) > maxval) maxval = fabs(vec[i]);
+        }
     }
+
+    // Free memory
+    free(vec);
+    free(mat);
+    free(piv);
 
     return maxval;
 }
