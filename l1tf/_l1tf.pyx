@@ -46,6 +46,9 @@ def l1tf(double[::1] X, double C, bool rel_c):
     cdef np.intp_t n_samples = X.shape[0]
     cdef np.double_t[::1] output_ = np.empty(n_samples, dtype=np.double)
 
+    if n_samples < 2:
+        raise RuntimeError("""`X` must have at least two samples.""")
+
     if rel_c:
         C_max = c_l1tf_Cmax(n_samples, &X[0], 0)
         if C_max < 0:
@@ -69,8 +72,12 @@ def l1tf_Cmax(double[::1] X):
     C_max : float
         The largest adaptive `C` value.
     """
+    cdef double C_max
+    cdef np.intp_t n_samples = X.shape[0]
+    if n_samples < 2:
+        raise RuntimeError("""`X` must have at least two samples.""")
 
-    cdef double C_max = c_l1tf_Cmax(X.shape[0], &X[0], 0)
+    C_max = c_l1tf_Cmax(n_samples, &X[0], 0)
     if C_max < 0:
         raise RuntimeError("""Cannot solve for adaptive regularization parameter.""")
     return C_max
