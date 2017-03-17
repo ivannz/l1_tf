@@ -51,8 +51,8 @@ class L1TrendFilter(BaseEstimator, TransformerMixin):
             raise ValueError("""`C` must be nonnegative.""")
 
         # Ensure `X` is a 2d numeric array: it is important that
-        #  the 2d array be in column-first layout.
-        ary2d = check_array(X, None, dtype="numeric", order="F",
+        #  the 2d array be in column-major layout.
+        ary2d = check_array(X, accept_sparse=False, dtype="numeric", order="F",
                             allow_nd=False, ensure_min_samples=1)
         self.C_max_ = [c_l1tf_Cmax(ary2d[:, j])
                        for j in xrange(ary2d.shape[1])]
@@ -64,8 +64,8 @@ class L1TrendFilter(BaseEstimator, TransformerMixin):
         the input data.
         """
         # Ensure `X` is a 2d numeric array: it is important that
-        #  the 2d array be in column-first layout.
-        ary2d = check_array(X, None, dtype="numeric", order="F",
+        #  the 2d array be in column-major layout.
+        ary2d = check_array(X, accept_sparse=False, dtype="numeric", order="F",
                             allow_nd=False, ensure_min_samples=1)
         if len(self.C_max_) != X.shape[1]:
             raise TypeError("""The input data must have the same dimension """
