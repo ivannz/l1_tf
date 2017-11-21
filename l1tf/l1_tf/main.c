@@ -102,7 +102,7 @@ void print_info(const int n, const double lambda, const double lambda_max)
     fprintf(stderr,"--------------------------------------------\n");
     fprintf(stderr,"l1 trend filtering via primal-dual algorithm\n");
     fprintf(stderr,"C version 0.7 Aug 18 2007                   \n");
-    fprintf(stderr,"Kwangmoo Koh, Seung-Jean Kim, Stephen Boyd\n");
+    fprintf(stderr,"Kwangmoo Koh,  Seung-Jean Kim,  Stephen Boyd\n");
     fprintf(stderr,"--------------------------------------------\n");
     fprintf(stderr,"data length         = %d\n",n);
     fprintf(stderr,"lambda (lambda_max) = %e (%e)\n\n",lambda,lambda_max);
