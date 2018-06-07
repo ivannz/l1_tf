@@ -1,26 +1,28 @@
 """Setup script for the L1_tf wrapper."""
-from setuptools import setup, Extension
+from setuptools import setup, Extension, find_packages
 from Cython.Build import cythonize
-from Cython.Distutils import build_ext
-from pip.req import parse_requirements
-from pip.download import PipSession
 
 import numpy
 
-install_reqs = parse_requirements("requirements.txt", session=PipSession())
+
+extensions = [
+    Extension("l1tf._l1tf",
+              sources=["l1tf/_l1tf.pyx"],
+              include_dirs=[numpy.get_include()],
+              libraries=["blas", "lapack"],
+              extra_compile_args=["-std=c99", "-O3", "-Ofast"])
+]
 
 # python setup.py build_ext [--inplace]
 setup(
     name="l1tf",
-    ext_modules=cythonize([Extension("l1tf._l1tf", ["l1tf/_l1tf.pyx"],
-                                     include_dirs=[numpy.get_include()],
-                                     libraries=["blas", "lapack", "m"]),]),
-    cmdclass={"build_ext": build_ext},
-    packages=["l1tf",],
-    author='Ivan Nazarov',
-    version='0.1.6',
+    version="0.1.6",
     description="""A python wrapper for L1 trend filtering via primal-dual """
                 """algorithm by Kwangmoo Koh, Seung-Jean Kim, and Stephen """
                 """Boyd (http://stanford.edu/~boyd/l1_tf/).""",
-    install_requires=[str(ir.req) for ir in install_reqs],
+    author="Ivan Nazarov",
+    license='GNU',
+    packages=find_packages(),
+    ext_modules=cythonize(extensions),
+    install_requires=["numpy", "cython"],
 )
